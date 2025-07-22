@@ -1,41 +1,69 @@
-export default async function handler(req, res) {
-    const currentToken = process.env.IG_CURRENT_TOKEN;
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseKey = process.env.SUPABASE_KEY;
-  
-    if (!currentToken || !supabaseUrl || !supabaseKey) {
-      return res.status(500).json({ success: false, message: "Missing env vars" });
-    }
-  
-    try {
-      const result = await fetch(
-        `https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=${currentToken}`
-      ).then((res) => res.json());
-  
-      if (!result.access_token) {
-        return res.status(500).json({ success: false, message: "Failed to refresh token", result });
-      }
-  
-      const newToken = result.access_token;
-  
-      await fetch(`${supabaseUrl}/rest/v1/instagram_token`, {
-        method: "POST",
-        headers: {
-          apikey: supabaseKey,
-          Authorization: `Bearer ${supabaseKey}`,
-          "Content-Type": "application/json",
-          Prefer: "return=minimal",
-        },
-        body: JSON.stringify({ token: newToken }),
-      });
-  
-      return res.status(200).json({
-        success: true,
-        message: "Token refreshed successfully",
-        token: newToken,
-      });
-    } catch (err) {
-      return res.status(500).json({ success: false, message: err.message });
-    }
+import { VercelRequest, VercelResponse } from '@vercel/node';
+import { createClient } from '@supabase/supabase-js';
+import axios from 'axios';
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // 1. Auth check from CRON_SECRET
+  const authHeader = req.headers.authorization;
+  const expectedSecret = `Bearer ${process.env.CRON_SECRET}`;
+  if (authHeader !== expectedSecret) {
+    return res.status(401).json({ error: 'Unauthorized' });
   }
-  
+
+  try {
+    // 2. Connect to Supabase
+    const supabase = createClient(
+      process.env.SUPABASE_URL!,
+      process.env.SUPABASE_KEY!
+    );
+
+    // 3. Get the current access token from Supabase
+    const { data, error } = await supabase
+      .from('instagram_tokens')
+      .select('access_token')
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .single();
+
+    if (error || !data?.access_token) {
+      throw new Error('Failed to retrieve current access token');
+    }
+
+    const currentAccessToken = data.access_token;
+
+    // 4. Call Instagram to refresh token
+    const { data: refreshResponse } = await axios.get(
+      'https://graph.instagram.com/refresh_access_token',
+      {
+        params: {
+          grant_type: 'ig_refresh_token',
+          access_token: currentAccessToken,
+        },
+      }
+    );
+
+    const refreshedToken = refreshResponse.access_token;
+    const expiresIn = refreshResponse.expires_in;
+
+    // 5. Store the new token in Supabase
+    const { error: insertError } = await supabase.from('instagram_tokens').insert([
+      {
+        access_token: refreshedToken,
+        expires_in: expiresIn,
+      },
+    ]);
+
+    if (insertError) {
+      throw new Error('Failed to store refreshed token in Supabase');
+    }
+
+    // 6. Done
+    return res.status(200).json({
+      message: 'Instagram token refreshed and saved successfully.',
+      expires_in: expiresIn,
+    });
+  } catch (err: any) {
+    console.error('Token refresh error:', err.message);
+    return res.status(500).json({ error: err.message });
+  }
+}
