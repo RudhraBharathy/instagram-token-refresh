@@ -7,8 +7,8 @@
     "start": "vercel start"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.42.5",
-    "axios": "^1.6.8",
-    "resend": "^0.26.0"
+    "@supabase/supabase-js": "^2.52.0",
+    "axios": "^1.10.0",
+    "resend": "^4.7.0"
   }
 }
