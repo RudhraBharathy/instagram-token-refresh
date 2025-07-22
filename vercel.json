@@ -12,7 +12,7 @@
       "dest": "api/refresh-token.ts"
     }
   ],
-  "cron": [
+  "crons": [
     {
       "path": "/api/refresh-token",
       "schedule": "0 0 */15 * *"
