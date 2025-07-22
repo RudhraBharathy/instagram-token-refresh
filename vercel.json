@@ -11,5 +11,11 @@
       "src": "/api/refresh-token",
       "dest": "api/refresh-token.ts"
     }
+  ],
+  "cron": [
+    {
+      "path": "/api/refresh-token",
+      "schedule": "0 0 */15 * *"
+    }
   ]
 }
