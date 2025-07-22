@@ -1,15 +1,15 @@
 {
-    "version": 2,
-    "functions": {
-      "api/refresh-token.ts": {
-        "runtime": "nodejs18.x"
-      }
-    },
-    "routes": [
-      {
-        "src": "/api/refresh-token",
-        "dest": "api/refresh-token.ts"
-      }
-    ]
-  }
-  
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/refresh-token.ts",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/refresh-token",
+      "dest": "api/refresh-token.ts"
+    }
+  ]
+}
