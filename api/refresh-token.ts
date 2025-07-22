@@ -25,11 +25,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .limit(1)
       .single();
 
-    if (error || !data?.token) {
+    console.log("Supabase fetch result:", { data, error });
+
+    if (error || !data?.access_token) {
       throw new Error("Failed to retrieve current token");
     }
 
-    const currentAccessToken = data.token;
+    const currentAccessToken = data.access_token; // ✅ FIXED LINE
 
     // 4. Call Instagram to refresh token
     const { data: refreshResponse } = await axios.get(
@@ -50,7 +52,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .from("instagram_token")
       .insert([
         {
-          token: refreshedToken,
+          access_token: refreshedToken, // ✅ use correct column name
           expires_in: expiresIn,
         },
       ]);
