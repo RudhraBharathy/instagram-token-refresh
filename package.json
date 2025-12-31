@@ -10,5 +10,8 @@
     "@supabase/supabase-js": "^2.52.0",
     "axios": "^1.10.0",
     "resend": "^4.7.0"
+  },
+  "devDependencies": {
+    "@vercel/node": "^3.0.0"
   }
 }
