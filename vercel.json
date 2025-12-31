@@ -6,6 +6,12 @@
       "use": "@vercel/node"
     }
   ],
+  "routes": [
+    {
+      "src": "^/api/refresh-token$",
+      "dest": "/api/refresh-token.ts"
+    }
+  ],
   "crons": [
     {
       "path": "/api/refresh-token",
